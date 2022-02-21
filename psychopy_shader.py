@@ -24,28 +24,18 @@ GL = win.backend.GL # Get the OpenGL instance from PsychoPy
 
 default_shader = win._progSignedTexMask
 
-siz = (256,256)
+siz = (1024,1024)
 
-noise = np.random.uniform(0, 1, siz)
+texture_bits = np.random.uniform(0, 1, siz)
 
-noise_tex = psychopy.visual.GratingStim(
+texture = psychopy.visual.GratingStim(
     win=win,
-    tex=noise,
+    tex=texture_bits,
     mask=None,
     size=siz
 )
 
-shader_frag_new = '''
-    uniform sampler2D texture,mask;
-    uniform float test_u;
-    void main() {
-        vec4 textureFrag = texture2D(texture,gl_TexCoord[0].st);
-        vec4 maskFrag = texture2D(mask,gl_TexCoord[1].st);
-        float color1 = (textureFrag.r*(gl_Color.r*2.0-1.0)+1.0)/2.0;
-        gl_FragColor.rgb = vec3(color1,0.0,test_u);
-        gl_FragColor.a = gl_Color.a * textureFrag.a * 1.0;
-    }
-    '''
+shader_frag_new = open('fragment_simple.c').readlines()
 
 program_new = psychopy.visual.shaders.compileProgram(
     vertexSource=shaders.vertSimple,
@@ -58,7 +48,7 @@ frames_per_cycle = 100
 
 phase_inc = 1.0 / frames_per_cycle
 
-noise_tex.color = 1.0
+texture.color = 1.0
 
 keep_going = True
 
@@ -67,9 +57,9 @@ keep_going = True
 # updateList() changes the OpenGL Display List that is executed in Draw()
 # Not sure why this must be called twice... ?
 win._progSignedTexMask = program_new
-noise_tex._updateList()
+texture._updateList()
 win._progSignedTexMask = program_new
-noise_tex._updateList()
+texture._updateList()
 win._progSignedTexMask = default_shader
 
 # Can do this anytime, but only need to do once:
@@ -77,7 +67,7 @@ loc=GL.glGetUniformLocation(program_new,b'test_u');
 
 while keep_going: 
 
-    noise_tex.draw()
+    texture.draw()
 
     win.flip()
 
@@ -90,8 +80,8 @@ while keep_going:
 
     # shouldn't need to rebuild the OpenGL list when we change a parameter like color
     # This confirms that. (rebuilding the list may take time)
-    noise_tex.color = 0.75
-    noise_tex._needUpdate = False 
+    texture.color = 0.75
+    texture._needUpdate = False 
 
     GL.glProgramUniform1f(program_new,loc, phase)
 
